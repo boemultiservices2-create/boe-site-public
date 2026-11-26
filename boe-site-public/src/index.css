@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  margin: 0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.boe-scroll {
+  scrollbar-width: none;
+}
+.boe-scroll::-webkit-scrollbar {
+  display: none;
+}
