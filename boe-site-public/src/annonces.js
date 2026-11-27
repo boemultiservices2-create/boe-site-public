@@ -5,15 +5,17 @@ import { useEffect, useState } from "react";
 // la même que celle alimentée par l'espace manager.
 // Seules les annonces "Publié" sont visibles (la politique RLS le garantit aussi côté base).
 // ============================================================================
-// L'URL et la clé "publishable" sont publiques par conception (la sécurité repose sur la RLS).
-// On accepte les deux noms de variable (PUBLISHABLE_KEY ou ANON_KEY) + valeurs de secours,
-// pour que le site public lise toujours la même base que l'espace manager.
-const SUPABASE_URL =
+const RAW_SUPABASE_URL =
   import.meta.env.VITE_SUPABASE_URL || "https://tyucydvnfvasmyzckowq.supabase.co";
-const SUPABASE_KEY =
+const SUPABASE_URL = RAW_SUPABASE_URL.trim()
+  .replace(/\/+$/, "")
+  .replace(/\/rest\/v1$/i, "");
+
+const SUPABASE_KEY = (
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "sb_publishable_A93kHgte_vu1gBaWeN-QcA_2gkueTd6";
+  "sb_publishable_A93kHgte_vu1gBaWeN-QcA_2gkueTd6"
+).trim();
 
 // kind du site public -> valeur de la colonne `category` dans Supabase
 const CATEGORY = { immobilier: "immobilier", automobile: "auto" };
@@ -79,9 +81,8 @@ export async function fetchAnnonces(kind) {
   }
   const url =
     `${SUPABASE_URL}/rest/v1/properties?select=*` +
-    `&category=eq.${category}` +
+    `&category=eq.${encodeURIComponent(category)}` +
     `&publication_status=eq.${encodeURIComponent("Publié")}` +
-    `&published=eq.true` +
     `&order=created_at.desc`;
 
   // Les clés "sb_publishable_..." ne sont pas des JWT : on ne les envoie que dans `apikey`.
@@ -90,7 +91,8 @@ export async function fetchAnnonces(kind) {
 
   const res = await fetch(url, { headers });
   if (!res.ok) throw new Error(`Lecture des annonces impossible (${res.status})`);
-  return (await res.json()).map(mapRow);
+  const rows = await res.json();
+  return rows.filter((r) => r.published !== false).map(mapRow);
 }
 
 export function useAnnonces(kind) {
